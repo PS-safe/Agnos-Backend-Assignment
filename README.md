@@ -82,6 +82,14 @@ go test -race ./...
 go vet ./...
 ```
 
+Run the isolated Docker Compose smoke test:
+
+```sh
+./scripts/smoke-test.sh
+```
+
+The script uses a unique Compose project, listens on port `18080` by default, exercises health, authentication, validation, and PostgreSQL-backed patient search through Nginx, then removes its disposable containers and volume. Set `SMOKE_APP_PORT` to use a different host port.
+
 ## Architecture
 
 ```text

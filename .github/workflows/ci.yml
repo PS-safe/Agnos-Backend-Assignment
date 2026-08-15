@@ -42,3 +42,6 @@ jobs:
 
       - name: Build container image
         run: docker build -t agnos-hospital-middleware:ci .
+
+      - name: Run Docker Compose smoke test
+        run: ./scripts/smoke-test.sh
