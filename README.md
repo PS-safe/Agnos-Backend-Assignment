@@ -4,6 +4,7 @@ A small hospital middleware service written in Go and Gin. It authenticates hosp
 
 ## Deliverables
 
+- [Consolidated reviewer deliverables PDF](output/pdf/Agnos_Backend_Deliverables.pdf)
 - [Google Docs-ready planning document](docs/Agnos_Development_Planning.docx)
 - [Development plan](docs/DEVELOPMENT_PLAN.md)
 - [API specification](docs/API_SPEC.md)
