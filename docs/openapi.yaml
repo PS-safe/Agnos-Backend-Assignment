@@ -159,10 +159,14 @@ components:
     LoginRequest:
       type: object
       additionalProperties: false
-      required: [username, password]
+      required: [username, password, hospital]
       properties:
         username: {type: string}
         password: {type: string, writeOnly: true}
+        hospital:
+          type: string
+          maxLength: 64
+          example: hospital-a
     Staff:
       type: object
       required: [id, username, hospital, created_at]
@@ -272,4 +276,3 @@ components:
       content:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
-

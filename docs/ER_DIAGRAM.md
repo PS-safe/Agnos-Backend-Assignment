@@ -49,7 +49,7 @@ erDiagram
 ## Constraints and tenant rules
 
 - `hospitals.code` is the stable external/API identifier.
-- `staff.username` is globally unique because login has no hospital input.
+- `staff.username` is globally unique; login also requires a hospital code that must match the staff row's hospital.
 - Each staff member and patient has exactly one `hospital_id`.
 - Patient access is always filtered by the `hospital_id` in the authenticated staff token.
 - `(hospital_id, patient_hn)` is unique.
@@ -60,4 +60,3 @@ erDiagram
 ## Data flow
 
 An identifier lookup goes to the hospital adapter. The normalized response is upserted using the hospital and HN identity, then queried again with every client-supplied filter. A non-identifier search queries previously normalized patient rows and is still limited to the authenticated hospital.
-

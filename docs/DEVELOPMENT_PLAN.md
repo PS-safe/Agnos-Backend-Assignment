@@ -28,7 +28,7 @@ Deliver a maintainable hospital middleware API that:
 ### Explicit assumptions
 
 1. `hospital` in staff creation is the stable hospital code. The seeded code is `hospital-a`.
-2. Usernames are globally unique because login does not include a hospital field.
+2. Usernames remain globally unique, and login requires the hospital code to match the staff account before a token is issued.
 3. Patient search fields are optional individually, but at least one must be supplied.
 4. Hospital A can look up a patient only by national ID or passport ID. Searches by other fields operate on already normalized records for that hospital.
 5. A Hospital A `404` is authoritative for an identifier lookup and produces an empty patient list.
@@ -73,7 +73,7 @@ Exit condition: project compiles and the service can connect to a migrated datab
 - Validate and normalize usernames and hospital codes.
 - Hash passwords with bcrypt.
 - Create staff accounts with conflict and unknown-hospital handling.
-- Authenticate credentials with a non-enumerating failure response.
+- Authenticate username, password, and hospital with a non-enumerating failure response.
 - Issue and verify scoped JWT access tokens.
 
 Exit condition: registration and login have positive and negative API tests.
@@ -140,4 +140,3 @@ PostgreSQL integration tests are a production follow-up; repository SQL is kept 
 - Docker Compose includes Nginx, Go, and PostgreSQL.
 - Development plan, API spec, ER diagram, and README are complete.
 - Repository contains no secrets, source assignment file, or real patient data.
-

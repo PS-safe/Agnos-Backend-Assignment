@@ -77,14 +77,15 @@ Unknown JSON fields and multiple JSON values are rejected.
 
 ## `POST /staff/login`
 
-Authenticates a globally unique username and returns a hospital-scoped JWT.
+Authenticates staff credentials for the supplied hospital and returns a hospital-scoped JWT. The hospital code is normalized to lowercase and must match the staff account.
 
 ### Request
 
 ```json
 {
   "username": "doctor.one",
-  "password": "correct-horse-battery"
+  "password": "correct-horse-battery",
+  "hospital": "hospital-a"
 }
 ```
 
@@ -111,7 +112,7 @@ Authenticates a globally unique username and returns a hospital-scoped JWT.
 | Status | Code | Meaning |
 |---|---|---|
 | `400` | `invalid_request` | Invalid JSON shape |
-| `401` | `unauthorized` | Username or password is invalid; the response does not reveal which |
+| `401` | `unauthorized` | Username, password, or hospital is invalid; the response does not reveal which |
 | `500` | `internal_error` | Unexpected service failure |
 
 ## `GET /patient/search`
@@ -205,4 +206,3 @@ The expected body contains `first_name_th`, `middle_name_th`, `last_name_th`, `f
 | `404` | `route_not_found` | Route does not exist |
 | `413` or `400` | `invalid_request` | Request exceeds the one-megabyte body limit or is malformed |
 | `429` | Nginx response | Per-client route rate limit exceeded |
-

@@ -48,7 +48,7 @@ Log in:
 ```sh
 curl -X POST http://localhost:8080/staff/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"doctor.one","password":"correct-horse-battery"}'
+  -d '{"username":"doctor.one","password":"correct-horse-battery","hospital":"hospital-a"}'
 ```
 
 Use the returned access token to search:
@@ -107,7 +107,7 @@ The service uses dependency inversion at its application boundaries, so handlers
 
 ## Key design decisions
 
-- A staff username is globally unique because the required login input contains only `username` and `password`; adding hospital to the lookup would otherwise be ambiguous.
+- Staff usernames remain globally unique in the database. Login requires `username`, `password`, and `hospital`; the normalized hospital must match the account before a token is issued.
 - Every individual patient filter is optional, but the request must contain at least one filter. Empty searches are rejected to prevent bulk patient enumeration.
 - The hospital scope comes exclusively from the signed access token. It is never accepted from a patient-search query parameter.
 - Hospital A supports exact national-ID or passport-ID lookup. An identifier search calls Hospital A, normalizes and upserts the result, and then applies all supplied criteria in PostgreSQL. Searches without an identifier query the normalized hospital cache.
