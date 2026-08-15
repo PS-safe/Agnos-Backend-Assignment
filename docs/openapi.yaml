@@ -1,0 +1,275 @@
+openapi: 3.1.0
+info:
+  title: Agnos Hospital Middleware API
+  version: 1.0.0
+  description: Hospital-scoped staff authentication and patient search.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Process liveness
+      responses:
+        "200":
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+  /staff/create:
+    post:
+      operationId: createStaff
+      summary: Create hospital staff credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRequest"
+      responses:
+        "201":
+          description: Staff member created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /staff/login:
+    post:
+      operationId: loginStaff
+      summary: Authenticate hospital staff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authentication succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /patient/search:
+    get:
+      operationId: searchPatients
+      summary: Search patients in the authenticated hospital
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/NationalID"
+        - $ref: "#/components/parameters/PassportID"
+        - $ref: "#/components/parameters/FirstName"
+        - $ref: "#/components/parameters/MiddleName"
+        - $ref: "#/components/parameters/LastName"
+        - $ref: "#/components/parameters/DateOfBirth"
+        - $ref: "#/components/parameters/PhoneNumber"
+        - $ref: "#/components/parameters/Email"
+      responses:
+        "200":
+          description: Search completed, including when no patients match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientSearchEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          $ref: "#/components/responses/HospitalUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    NationalID:
+      name: national_id
+      in: query
+      schema: {type: string, maxLength: 64}
+    PassportID:
+      name: passport_id
+      in: query
+      schema: {type: string, maxLength: 64}
+    FirstName:
+      name: first_name
+      in: query
+      schema: {type: string, maxLength: 255}
+    MiddleName:
+      name: middle_name
+      in: query
+      schema: {type: string, maxLength: 255}
+    LastName:
+      name: last_name
+      in: query
+      schema: {type: string, maxLength: 255}
+    DateOfBirth:
+      name: date_of_birth
+      in: query
+      schema: {type: string, format: date}
+    PhoneNumber:
+      name: phone_number
+      in: query
+      schema: {type: string, maxLength: 64}
+    Email:
+      name: email
+      in: query
+      schema: {type: string, format: email, maxLength: 320}
+  schemas:
+    CreateStaffRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password, hospital]
+      properties:
+        username:
+          type: string
+          pattern: "^[A-Za-z0-9._-]{3,64}$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 72
+          writeOnly: true
+        hospital:
+          type: string
+          example: hospital-a
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username: {type: string}
+        password: {type: string, writeOnly: true}
+    Staff:
+      type: object
+      required: [id, username, hospital, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        username: {type: string}
+        hospital: {type: string}
+        created_at: {type: string, format: date-time}
+    StaffEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: {$ref: "#/components/schemas/Staff"}
+    LoginEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [access_token, token_type, expires_in, staff]
+          properties:
+            access_token: {type: string}
+            token_type: {type: string, const: Bearer}
+            expires_in: {type: integer, minimum: 0}
+            staff: {$ref: "#/components/schemas/Staff"}
+    Patient:
+      type: object
+      required:
+        - first_name_th
+        - middle_name_th
+        - last_name_th
+        - first_name_en
+        - middle_name_en
+        - last_name_en
+        - date_of_birth
+        - patient_hn
+        - national_id
+        - passport_id
+        - phone_number
+        - email
+        - gender
+      properties:
+        first_name_th: {type: string}
+        middle_name_th: {type: string}
+        last_name_th: {type: string}
+        first_name_en: {type: string}
+        middle_name_en: {type: string}
+        last_name_en: {type: string}
+        date_of_birth: {type: string, format: date}
+        patient_hn: {type: string}
+        national_id: {type: string}
+        passport_id: {type: string}
+        phone_number: {type: string}
+        email: {type: string}
+        gender: {type: string, enum: [M, F]}
+    PatientSearchEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [patients, count]
+          properties:
+            patients:
+              type: array
+              maxItems: 100
+              items: {$ref: "#/components/schemas/Patient"}
+            count: {type: integer, minimum: 0, maximum: 100}
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string}
+            message: {type: string}
+  responses:
+    InvalidRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: Resource was not found
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    HospitalUnavailable:
+      description: Hospital information system failed
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    InternalError:
+      description: Unexpected server failure
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+
