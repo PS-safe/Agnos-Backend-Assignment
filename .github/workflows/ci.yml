@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Run tests with race detection
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Run static analysis
+        run: go vet ./...
+
+      - name: Build application
+        run: go build ./cmd/api
+
+      - name: Validate Compose configuration
+        env:
+          POSTGRES_PASSWORD: ci-database-password
+          JWT_SECRET: ci-only-secret-containing-at-least-32-characters
+        run: docker compose config --quiet
+
+      - name: Build container image
+        run: docker build -t agnos-hospital-middleware:ci .
