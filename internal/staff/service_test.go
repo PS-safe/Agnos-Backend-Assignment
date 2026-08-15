@@ -111,8 +111,9 @@ func TestLoginReturnsTokenWithoutHash(t *testing.T) {
 	)
 
 	result, err := service.Login(context.Background(), LoginInput{
-		Username: " Doctor.One ",
-		Password: "correct-horse-battery",
+		Username:     " Doctor.One ",
+		Password:     "correct-horse-battery",
+		HospitalCode: " Hospital-A ",
 	})
 	if err != nil {
 		t.Fatalf("login returned error: %v", err)
@@ -127,11 +128,52 @@ func TestLoginReturnsTokenWithoutHash(t *testing.T) {
 
 func TestLoginHidesCredentialFailureReason(t *testing.T) {
 	t.Parallel()
-	repository := &fakeStaffRepository{found: core.Staff{PasswordHash: "hash"}}
+	repository := &fakeStaffRepository{found: core.Staff{PasswordHash: "hash", HospitalCode: "hospital-a"}}
 	service := NewService(repository, fakePasswords{compareErr: errors.New("mismatch")}, fakeTokens{})
 
-	_, err := service.Login(context.Background(), LoginInput{Username: "doctor.one", Password: "wrong-password"})
+	_, err := service.Login(context.Background(), LoginInput{
+		Username:     "doctor.one",
+		Password:     "wrong-password",
+		HospitalCode: "hospital-a",
+	})
 	if !errors.Is(err, core.ErrUnauthorized) {
 		t.Fatalf("expected unauthorized, got %v", err)
+	}
+}
+
+func TestLoginRejectsMissingOrMismatchedHospital(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		hospitalInput string
+	}{
+		{name: "missing hospital"},
+		{name: "mismatched hospital", hospitalInput: "hospital-b"},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repository := &fakeStaffRepository{found: core.Staff{
+				Username:     "doctor.one",
+				PasswordHash: "hash",
+				HospitalCode: "hospital-a",
+			}}
+			service := NewService(repository, fakePasswords{}, fakeTokens{token: "must-not-be-issued"})
+
+			result, err := service.Login(context.Background(), LoginInput{
+				Username:     "doctor.one",
+				Password:     "correct-horse-battery",
+				HospitalCode: test.hospitalInput,
+			})
+			if !errors.Is(err, core.ErrUnauthorized) {
+				t.Fatalf("expected unauthorized, got %v", err)
+			}
+			if result.Token != "" {
+				t.Fatalf("unexpected token for invalid hospital: %q", result.Token)
+			}
+		})
 	}
 }

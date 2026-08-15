@@ -110,6 +110,7 @@ func (h *handler) createStaff(c *gin.Context) {
 type loginStaffRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Hospital string `json:"hospital"`
 }
 
 func (h *handler) loginStaff(c *gin.Context) {
@@ -120,8 +121,9 @@ func (h *handler) loginStaff(c *gin.Context) {
 	}
 
 	result, err := h.staff.Login(c.Request.Context(), staff.LoginInput{
-		Username: request.Username,
-		Password: request.Password,
+		Username:     request.Username,
+		Password:     request.Password,
+		HospitalCode: request.Hospital,
 	})
 	if err != nil {
 		writeApplicationError(c, err)
@@ -305,7 +307,7 @@ func writeApplicationError(c *gin.Context, err error) {
 	case errors.Is(err, core.ErrInvalidInput):
 		writeError(c, http.StatusBadRequest, "invalid_request", publicMessage(err, "request validation failed"))
 	case errors.Is(err, core.ErrUnauthorized):
-		writeError(c, http.StatusUnauthorized, "unauthorized", "invalid username, password, or access token")
+		writeError(c, http.StatusUnauthorized, "unauthorized", "invalid username, password, hospital, or access token")
 	case errors.Is(err, core.ErrNotFound):
 		writeError(c, http.StatusNotFound, "not_found", publicMessage(err, "resource not found"))
 	case errors.Is(err, core.ErrConflict):

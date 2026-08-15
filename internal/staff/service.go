@@ -41,8 +41,9 @@ type CreateInput struct {
 }
 
 type LoginInput struct {
-	Username string
-	Password string
+	Username     string
+	Password     string
+	HospitalCode string
 }
 
 type LoginResult struct {
@@ -57,7 +58,7 @@ func NewService(repository Repository, passwords PasswordManager, tokens TokenIs
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (core.Staff, error) {
 	username := normalizeUsername(input.Username)
-	hospitalCode := strings.ToLower(strings.TrimSpace(input.HospitalCode))
+	hospitalCode := normalizeHospitalCode(input.HospitalCode)
 	if err := validateCredentials(username, input.Password); err != nil {
 		return core.Staff{}, err
 	}
@@ -80,7 +81,8 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (core.Staff, er
 
 func (s *Service) Login(ctx context.Context, input LoginInput) (LoginResult, error) {
 	username := normalizeUsername(input.Username)
-	if username == "" || input.Password == "" {
+	hospitalCode := normalizeHospitalCode(input.HospitalCode)
+	if username == "" || input.Password == "" || hospitalCode == "" || len(hospitalCode) > 64 {
 		return LoginResult{}, core.ErrUnauthorized
 	}
 
@@ -90,6 +92,9 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (LoginResult, err
 			return LoginResult{}, core.ErrUnauthorized
 		}
 		return LoginResult{}, err
+	}
+	if normalizeHospitalCode(found.HospitalCode) != hospitalCode {
+		return LoginResult{}, core.ErrUnauthorized
 	}
 	if err := s.passwords.Compare(found.PasswordHash, input.Password); err != nil {
 		return LoginResult{}, core.ErrUnauthorized
@@ -105,6 +110,10 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (LoginResult, err
 
 func normalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))
+}
+
+func normalizeHospitalCode(hospitalCode string) string {
+	return strings.ToLower(strings.TrimSpace(hospitalCode))
 }
 
 func validateCredentials(username, password string) error {

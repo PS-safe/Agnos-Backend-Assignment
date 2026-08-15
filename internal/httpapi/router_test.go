@@ -137,7 +137,7 @@ func TestLoginStaffAPI(t *testing.T) {
 		staffUseCase := fakeStaffUseCase{
 			create: unexpectedCreate(t),
 			login: func(_ context.Context, input staff.LoginInput) (staff.LoginResult, error) {
-				if input.Username != "doctor.one" || input.Password != "correct-horse-battery" {
+				if input.Username != "doctor.one" || input.Password != "correct-horse-battery" || input.HospitalCode != "hospital-a" {
 					t.Fatalf("unexpected login input: %+v", input)
 				}
 				return staff.LoginResult{
@@ -156,7 +156,8 @@ func TestLoginStaffAPI(t *testing.T) {
 
 		response := performRequest(router, http.MethodPost, "/staff/login", `{
 			"username":"doctor.one",
-			"password":"correct-horse-battery"
+			"password":"correct-horse-battery",
+			"hospital":"hospital-a"
 		}`, "")
 
 		if response.Code != http.StatusOK {
@@ -186,7 +187,30 @@ func TestLoginStaffAPI(t *testing.T) {
 
 		response := performRequest(router, http.MethodPost, "/staff/login", `{
 			"username":"doctor.one",
-			"password":"incorrect-password"
+			"password":"incorrect-password",
+			"hospital":"hospital-a"
+		}`, "")
+
+		assertErrorResponse(t, response, http.StatusUnauthorized, "unauthorized")
+	})
+
+	t.Run("passes a mismatched hospital to credential validation", func(t *testing.T) {
+		t.Parallel()
+		staffUseCase := fakeStaffUseCase{
+			create: unexpectedCreate(t),
+			login: func(_ context.Context, input staff.LoginInput) (staff.LoginResult, error) {
+				if input.HospitalCode != "hospital-b" {
+					t.Fatalf("unexpected hospital input: %+v", input)
+				}
+				return staff.LoginResult{}, core.ErrUnauthorized
+			},
+		}
+		router := testRouter(staffUseCase, unexpectedPatientSearch(t), validTokenVerifier())
+
+		response := performRequest(router, http.MethodPost, "/staff/login", `{
+			"username":"doctor.one",
+			"password":"correct-horse-battery",
+			"hospital":"hospital-b"
 		}`, "")
 
 		assertErrorResponse(t, response, http.StatusUnauthorized, "unauthorized")

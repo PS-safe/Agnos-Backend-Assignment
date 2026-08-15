@@ -75,7 +75,7 @@ expect_status "staff creation" 201 \
 
 login_status="$(request_status \
     -X POST -H 'Content-Type: application/json' \
-    -d '{"username":"smoke.tester","password":"Smoke-only-pass-2026!"}' \
+    -d '{"username":"smoke.tester","password":"Smoke-only-pass-2026!","hospital":"hospital-a"}' \
     "http://localhost:$smoke_port/staff/login")"
 [ "$login_status" = "200" ] || fail "staff login expected HTTP 200 but received $login_status"
 
